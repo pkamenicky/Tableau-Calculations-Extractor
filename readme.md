@@ -2,7 +2,9 @@
 
 Small app for extracting and reviewing Calculated Fields in Tableau TWB files.
 
-## Usage
+## How To
+
+https://www.youtube.com/watch?v=KMQHU-ttIdY
 
 Download **tableau_calculations_extractor.html** and run locally on your computer.
 
