@@ -196,10 +196,11 @@
     })
  
     datasources = removeDuplicateObjectFromArray(datasources, 'name')
+    data = removeDuplicateObjectFromArray(data, 'name')
  
     data = data.filter(d => (typeof d.caption) !== 'undefined').filter(d => (typeof d.formula) !== 'undefined')
  
-    data.sort((a, b) => (a.caption > b.caption) ? 1 : -1)
+    data.sort((a, b) => (a.caption.toLowerCase() > b.caption.toLowerCase()) ? 1 : -1)
  
     for(let i = 0; i < data.length; i++){
       var hladat = data[i].name
