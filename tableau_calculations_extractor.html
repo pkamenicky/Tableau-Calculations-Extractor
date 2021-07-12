@@ -1,0 +1,301 @@
+<!-- Pavol Kamenicky version 2021 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <title>Tableau Calculations</title>
+  <style>
+    body {
+      color: rgb(0, 0, 0); background-color: rgb(243, 243, 243);text-align: center; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    p {margin: 0 0 48px;}
+ 
+    table {
+      border: 1px solid rgb(151, 150, 150);
+      border-collapse: collapse;
+      width: 95%;
+      margin: 0 auto;   
+      margin-bottom:150%;
+    }
+    th, td {
+      padding: 8px; border: 1px solid rgb(115, 113, 117);
+    }
+    th {
+      background-color: rgb(115, 113, 117); 
+      color: rgb(243, 243, 243);
+      
+      font-size: large;
+    }
+    td {
+        text-align: left;
+    }
+    .field {/* font-weight: 600; */text-shadow : 0.3px 0.3px black;
+    }
+    #submit_button {
+      background: rgb(3, 114, 206);
+      color: #fff;
+      border: 1px solid #eee;
+      box-shadow: 3px 3px 3px rgb(120, 178, 231);
+      font-size: 14px;   
+      font-weight: 600;; 
+    }
+    #submit_button:hover {
+      background: rgb(1, 16, 27);
+      box-shadow: 5px 5px 5px rgb(121, 123, 124);
+      transition: box-shadow 0.5s;        
+    }
+    .invis {
+      visibility: hidden;
+      border-collapse: separate;
+    }    
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      border-radius: 8px;
+    }
+    .upload-btn-wrapper:hover {    
+      box-shadow: 0px 0px 25px rgb(164, 189, 201); 
+      transition: box-shadow 0.5s;
+    }
+    .btn {
+      border: 2px solid gray;
+      color: gray;
+      background-color: white;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #input {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+    }
+    .tooltip {      
+      position: relative;
+      display: inline-block;
+      color: rgb(165, 164, 164);
+      font-weight: bold;
+    }
+    .tooltip:hover {
+      color: rgb(207, 207, 207);
+      transition: color 0.5s;
+    }
+    .tooltip .tooltiptext {        
+      padding:20px;
+      visibility: hidden;
+      font-weight: normal;
+      width: 620px;
+      background-color: white;
+      color: black;
+      text-align: center;
+      border-radius: 14px;
+      padding: 5px 0;
+      position: absolute;
+      z-index: 1;
+      top: 100%;
+      left: 50%;
+      margin-left: -310px;
+      margin-top: 225px;
+      box-shadow: 0px 0px 25px rgb(143, 233, 255); 
+      /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
+      opacity: 0;
+      transition: opacity 1s;
+    }
+    .tooltip:hover .tooltiptext {visibility: visible; opacity: 1;}
+
+    .uploadovany_subor {
+      font-weight: bold;
+      margin-top: 5px;
+    }
+ 
+    za-tvorka {font-weight:900;}   
+    cu-rly {font-weight:900;}
+    num-ber {font-weight: 900; color: rgb(146, 21, 21);}
+    po-le {text-decoration:none;color: rgb(207, 128, 9);}
+    .formula > pre> a {color: rgb(207, 128, 9);}
+    a > po-le {color:inherit;text-decoration:inherit}
+    para-meter > po-le {color: rgb(144, 64, 209);}
+    para-meter > a {color: rgb(144, 64, 209);}
+    para-meter > a > po-le {color:inherit;text-decoration:inherit;}
+    sing-le {color: rgb(16, 139, 16);}
+    doub-le {color: rgb(16, 139, 16);}
+    com-ment{color: rgb(172, 172, 172);}
+    
+  </style>
+</head>
+ 
+<body>
+ 
+<div class="tooltip">Want to process a TWBX file? 
+  <div class="tooltiptext"><br>
+    TWBX file is a zip file containing TWB and Hyper files.<br><br>
+    To get the TWB file - manually change '.twbx' suffix to '.zip' and unzip.<br><br>
+  </div>
+</div>
+<p></p>
+  <div class="upload-btn-wrapper">
+    <input type="file" id='input'/>
+    <button class="btn">Get TWB file</button>    
+  </div> 
+  <p class='uploadovany_subor'></p>
+  <p>
+    <button type="submit" id='submit_button'>Process and view formulas</button>
+  <p><br></p> 
+  <button id="btnExport" onclick="fnExcelReport();" class='invis'>Export xls</button>
+  <p>
+    <table id='tabulka' class='invis'>
+      <thead>
+        <th>Calculated Field / Parameter</th>
+        <th>Formula / Current Value</th>
+        <th>Used In</th>
+      </thead>
+    </table>
+  </p>
+</body>
+ 
+<script>
+  window.onbeforeunload = function () {window.scrollTo(0, 0);}
+
+  const button = document.querySelector('#submit_button') 
+  const input = document.querySelector('#input')
+ 
+  var subor
+ 
+  function removeDuplicateObjectFromArray(array, key) {
+      var check = new Set();
+      return array.filter(obj => !check.has(obj[key]) && check.add(obj[key]));
+    }
+ 
+  function spracuj (twb) {
+    //console.log(twb)
+    document.querySelector('table').classList.contains('invis')?true:document.querySelector('table').classList.add('invis')
+    document.querySelector('#btnExport').classList.contains('invis')?true:document.querySelector('#btnExport').classList.add('invis')
+    var data = []
+    var datasources = []
+ 
+    $(twb).find('column > calculation').each(function (ix,item) { // gathering calculated fields and their qualities
+      let caption = $(item).parent().attr('caption')
+      let name = $(item).parent().attr('name')
+      let link_id = name.replace(/\s/g, 'x').slice(0, 1) + "xxx" + name.replace(/\s/g, 'x').slice(1)
+      // link_id = link_id.replace(/\[(.*?)\]/g,'$1').replace(/\(/g,'').replace(/\)/g,'').replace(/\{/g,'').replace(/\}/g,'').replace(/'/g,'').replace(/"/g,'').replace(/\/\/(.*?)\n/g,'$1').replace(/\*/g,'')
+      let formula = $(item).attr('formula')
+      let usedIn = ''
+      if ($(item).parent().attr('user:unnamed') === undefined) {data.push({caption,name,formula,usedIn,link_id})}
+    })
+ 
+    $(twb).find('datasource').each(function (ix,item) {  // gathering datasources captions (names used by users) and names (IDs)
+      let caption = $(item).parent().attr('caption')
+      let name = $(item).parent().attr('name')
+      if (caption !== undefined & name !== undefined) {datasources.push({caption,name})}
+    })
+ 
+    datasources = removeDuplicateObjectFromArray(datasources, 'name')
+ 
+    data = data.filter(d => (typeof d.caption) !== 'undefined').filter(d => (typeof d.formula) !== 'undefined')
+ 
+    data.sort((a, b) => (a.caption > b.caption) ? 1 : -1)
+ 
+    for(let i = 0; i < data.length; i++){
+      var hladat = data[i].name
+      data.forEach(d=> { if ((d.formula.includes(hladat)) && !(data[i].usedIn.includes(d.caption))) {data[i].usedIn = data[i].usedIn + `<a href=#${d.link_id}>&#13;&#10;${d.caption}</a>` } })
+    }
+ 
+    for(let i = 0; i < data.length; i++){
+      var naVymenu = data[i].name      
+      var vymenitS = `<a href=#${data[i].link_id}>[${data[i].caption}]</a>`
+      data.forEach(d=> {d.formula = d.formula.split(naVymenu).join(vymenitS)})
+    }
+ 
+    for(let i = 0; i < datasources.length; i++){
+      var naVymenu = datasources[i].name
+      var vymenitS = datasources[i].caption
+      data.forEach(d=> {d.formula = d.formula.split(naVymenu).join(vymenitS)})
+    }
+ 
+    data.forEach(d=> d.usedIn = d.usedIn.replace(/^(,  )/,''))
+ 
+    data = data.filter((thing, index, self) => index === self.findIndex((t) => (t.place === thing.place && t.name === thing.name)))
+ 
+    $('table').append('<tbody>')
+ 
+    $(data).each((idx, {caption,formula,usedIn,link_id}) => {
+      $('tbody').append(
+        $(`<tr id=${link_id}>`)
+          .append($('<td>',{html:`<pre>${caption}</pre>`}))
+          .append($('<td>',{html:`<pre>${formula}</pre>`}))
+          .append($('<td>',{html:`<pre>${usedIn}</pre>`}))
+      )
+    })
+ 
+    document.querySelector('table').classList.remove('invis') 
+    document.querySelector('#btnExport').classList.remove('invis') 
+    document.querySelectorAll('tbody > tr').forEach(d=> d.querySelector('td').classList.add('field')) 
+    document.querySelectorAll('tbody > tr').forEach(d=> d.querySelector('td:nth-child(2)').classList.add('formula')) 
+
+    var ids = []
+    $('a').each(function(idx, item) { //taking links out before applying formatting
+      ids.push($(item).attr('href'))
+      $(item).removeAttr('href')
+    })
+ 
+    $('.formula').each((idx,d) => {
+      $(d).html((i, h) => h.replace(/\(/g,'<za-tvorka>(</za-tvorka>'))
+      $(d).html((i, h) => h.replace(/\)/g,'<za-tvorka>)</za-tvorka>'))
+      $(d).html((i, h) => h.replace(/\{/g,'<cu-rly>{</cu-rly>'))
+      $(d).html((i, h) => h.replace(/\}/g,'<cu-rly>}</cu-rly>'))
+      $(d).html((i, h) => h.replace(/\[Parameters\]\.<a([\s\S]*?)<\/a>/g,'<para-meter>[Parameters].<a$1</a></para-meter>'))
+      $(d).html((i, h) => h.replace(/\[(.*?)\]/g,'<po-le>[$1]</po-le>'))
+      $(d).html((i, h) => h.replace(/'([\s\S]*?)'/g,"<sing-le>'$1'</sing-le>"))
+      $(d).html((i, h) => h.replace(/"([\s\S]*?)"/g,'<doub-le>"$1"</doub-le>'))
+      $(d).html((i, h) => h.replace(/\/\/(.*?)\n/g,'<com-ment>//$1</com-ment>\n'))
+      $(d).html((i, h) => h.replace(/\/\*([\s\S]*?)\*\//g,'<com-ment>/*$1*/</com-ment>'))
+    })
+ 
+    $('com-ment').each((idx,d) => {
+      $(d).html((i, h) => h.replace(/<(.*?)>/g,''))
+    })
+ 
+    $('a').each(function(idx, item) {   //putting links back
+      $(item).attr('href',ids[idx])
+    })
+ 
+  }
+ 
+  button.addEventListener('click', e => {
+    $('tbody').remove()
+    spracuj(subor)
+    // $.get(subor, spracuj)
+  },false)
+ 
+  input.addEventListener('change',function (e) {
+    document.querySelector('.uploadovany_subor').innerHTML = (input.files[0].name)
+    var reader = new FileReader()
+    reader.onload = () => subor = reader.result
+    reader.readAsText(input.files[0])
+  })
+  
+  function fnExcelReport() {
+    var tab_text="<table border='2px'><tr bgcolor='#87AFC6'>"
+    var textRange; var j=0
+    tab = document.querySelector('table')
+ 
+    for(j = 0 ; j < tab.rows.length ; j++) {
+      tab_text=tab_text+tab.rows[j].innerHTML.replace(/<a(.*?)>/g,'').replace(/<\/a>/g,'')+"</tr>"
+      }
+ 
+    tab_text=tab_text+"</table>"
+    tab_text= tab_text.replace(/<input[^>]*>|<\/input>/gi, "") // removes input params
+    
+    sa = window.open('data:application/vnd.ms-excel,' + encodeURIComponent(tab_text))
+ 
+    return (sa)
+  }
+ 
+</script>
+</html>
