@@ -254,6 +254,7 @@
       $(d).html((i, h) => h.replace(/'([\s\S]*?)'/g,"<sing-le>'$1'</sing-le>"))
       $(d).html((i, h) => h.replace(/"([\s\S]*?)"/g,'<doub-le>"$1"</doub-le>'))
       $(d).html((i, h) => h.replace(/\/\/(.*?)\n/g,'<com-ment>//$1</com-ment>\n'))
+      $(d).html((i, h) => h.replace(/\/\/(.*?)<\/pre>/g,'<com-ment>//$1</com-ment></pre>'))
       $(d).html((i, h) => h.replace(/\/\*([\s\S]*?)\*\//g,'<com-ment>/*$1*/</com-ment>'))
     })
  
